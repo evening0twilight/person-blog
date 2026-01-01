@@ -28,8 +28,6 @@ const toggleMobileMenu = () => {
 
 <style scoped>
 .main-layout {
-  display: flex;
-  min-height: 100vh;
   background: var(--bg-color);
 }
 
@@ -38,11 +36,10 @@ const toggleMobileMenu = () => {
 }
 
 .main-content {
-  flex: 1;
   padding: 2rem;
   padding-bottom: 5rem;
-  /* 为移动端底部导航留空间 */
-  overflow-y: auto;
+  padding-right: 100px;
+  /* 为右侧导航栏留空间 */
 }
 
 .mobile-nav {
@@ -68,8 +65,8 @@ const toggleMobileMenu = () => {
   .main-content {
     padding: 3rem;
     padding-bottom: 3rem;
-    margin-left: 80px;
-    /* 侧边栏宽度 */
+    padding-right: 120px;
+    /* 为右侧导航栏留空间 */
   }
 }
 </style>

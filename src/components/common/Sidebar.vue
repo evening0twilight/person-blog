@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 interface Props {
   isMobile?: boolean
@@ -10,32 +9,62 @@ const props = withDefaults(defineProps<Props>(), {
   isMobile: false
 })
 
-const router = useRouter()
-const route = useRoute()
-
-// 导航项配置
+// 导航项配置 - 基于锚点ID
 const navItems = [
-  { name: 'home', path: '/', icon: '🏠', label: '首页' },
-  { name: 'skills', path: '/skills', icon: '💡', label: '技能' },
-  { name: 'projects', path: '/projects', icon: '📦', label: '作品' },
-  { name: 'demo', path: '/demo', icon: '🎮', label: 'Demo' },
-  { name: 'about', path: '/about', icon: '👤', label: '关于' },
+  { id: 'home', icon: '🏠', label: '首页' },
+  { id: 'skills', icon: '💡', label: '技能' },
+  { id: 'projects', icon: '📦', label: '作品' },
+  { id: 'demo', icon: '🎮', label: 'Demo' },
+  { id: 'about', icon: '👤', label: '关于' },
 ]
 
-const isActive = (path: string) => {
-  return route.path === path
+const activeSection = ref('home')
+
+// 滚动到指定区域
+const handleNavigate = (id: string) => {
+  const element = document.getElementById(id)
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth' })
+  }
 }
 
-const handleNavigate = (path: string) => {
-  router.push(path)
+// 监听滚动，更新当前激活的区域
+const handleScroll = () => {
+  const sections = navItems.map(item => ({
+    id: item.id,
+    element: document.getElementById(item.id)
+  })).filter(section => section.element !== null)
+
+  const scrollPosition = window.scrollY + window.innerHeight / 2
+
+  for (let i = sections.length - 1; i >= 0; i--) {
+    const section = sections[i]
+    if (section?.element && section.element.offsetTop <= scrollPosition) {
+      activeSection.value = section.id
+      break
+    }
+  }
 }
+
+const isActive = (id: string) => {
+  return activeSection.value === id
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll)
+  handleScroll() // 初始化
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
 </script>
 
 <template>
   <nav :class="['sidebar', { 'sidebar-mobile': isMobile }]">
     <div class="nav-items">
-      <div v-for="item in navItems" :key="item.name" :class="['nav-item', { active: isActive(item.path) }]"
-        @click="handleNavigate(item.path)">
+      <div v-for="item in navItems" :key="item.id" :class="['nav-item', { active: isActive(item.id) }]"
+        @click="handleNavigate(item.id)">
         <span class="nav-icon">{{ item.icon }}</span>
         <span class="nav-label">{{ item.label }}</span>
       </div>
@@ -46,16 +75,21 @@ const handleNavigate = (path: string) => {
 <style scoped>
 .sidebar {
   position: fixed;
-  left: 0;
-  top: 0;
-  height: 100vh;
-  width: 80px;
-  background: var(--sidebar-bg, #1a1a1a);
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 50vh;
+  width: 60px;
+  background: var(--sidebar-bg, rgba(26, 26, 26, 0.8));
+  backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem 0;
+  justify-content: center;
+  padding: 1.5rem 0;
+  border-radius: 30px;
   z-index: 1000;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .sidebar-mobile {
@@ -81,14 +115,17 @@ const handleNavigate = (path: string) => {
 
 .nav-item {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   gap: 0.5rem;
-  padding: 1rem;
+  padding: 0.8rem;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
   color: var(--text-secondary, #888);
+  border-radius: 12px;
+  width: 100%;
+  justify-content: center;
 }
 
 .sidebar-mobile .nav-item {
@@ -109,16 +146,20 @@ const handleNavigate = (path: string) => {
   color: var(--primary-color, #42b983);
 }
 
+.nav-item.active {
+  background: rgba(66, 185, 131, 0.1);
+}
+
 .nav-item.active::before {
   content: '';
   position: absolute;
-  left: 0;
+  right: -10px;
   top: 50%;
   transform: translateY(-50%);
   width: 4px;
   height: 60%;
   background: var(--primary-color, #42b983);
-  border-radius: 0 4px 4px 0;
+  border-radius: 4px 0 0 4px;
 }
 
 .sidebar-mobile .nav-item.active::before {
@@ -140,20 +181,33 @@ const handleNavigate = (path: string) => {
 }
 
 .nav-label {
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 500;
   white-space: nowrap;
+  position: absolute;
+  right: 70px;
+  background: var(--sidebar-bg, rgba(26, 26, 26, 0.95));
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
   opacity: 0;
-  max-height: 0;
-  overflow: hidden;
+  pointer-events: none;
+  transform: translateX(10px);
   transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.nav-item:hover .nav-label,
-.nav-item.active .nav-label,
-.sidebar-mobile .nav-label {
+.nav-item:hover .nav-label {
   opacity: 1;
-  max-height: 20px;
+  transform: translateX(0);
+}
+
+.sidebar-mobile .nav-label {
+  position: static;
+  opacity: 1;
+  transform: none;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
 }
 
 .sidebar-mobile .nav-label {
